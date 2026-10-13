@@ -60,10 +60,10 @@ if [[ "$MODE" == "probe" ]]; then
     PROBE_DBS="${2:?Usage: ./finetune.sh probe <device_batch_size> [nproc] [preset=lora|full]}"
     NPROC="${3:-8}"
     PROBE_PRESET="${4:-lora}"
-    MIXTURE="yam_data_collection"
+    MIXTURE="${MIXTURE:-yam_data_collection}"
 else
     NPROC="${2:-1}"
-    MIXTURE="${3:-yam_data_collection}"
+    MIXTURE="${3:-${MIXTURE:-yam_data_collection}}"
 fi
 DEPTH="${DEPTH:-0}"
 if [[ "$DEPTH" == "1" ]]; then
@@ -75,7 +75,7 @@ WANDB_PROJECT="${WANDB_PROJECT:-SK-ablation}"
 
 if [[ -n "${GPUS:-}" ]]; then
     export CUDA_VISIBLE_DEVICES="$GPUS"
-    NPROC=$(( $(grep -o ',' <<<"$GPUS" | wc -l) + 1 ))
+    NPROC=$(( $(grep -o ',' <<<"$GPUS" | wc -l || true) + 1 ))
 fi
 
 
@@ -101,6 +101,13 @@ fi
 [[ -n "${HF_ACCESS_TOKEN:-}" ]] && export HF_ACCESS_TOKEN
 
 export WANDB_API_KEY
+
+# MIXTURE=yam_unfold_linen: dataset made by scripts/mcap_to_lerobot.py (copied to the box, not on COS).
+# Expects <LEROBOT_DATA_ROOT>/unfold_linen_20261009; default root is the NVMe scratch.
+if [[ "$MIXTURE" == "yam_unfold_linen" && -z "${LEROBOT_DATA_ROOT:-}" ]]; then
+    LEROBOT_DATA_ROOT="${UNFOLD_DATA_DIR:-/opt/dlami/nvme/yam_lerobot}"
+    [[ -d "$LEROBOT_DATA_ROOT/unfold_linen_20261009" ]] || { echo "No $LEROBOT_DATA_ROOT/unfold_linen_20261009 — copy the converted dataset first" >&2; exit 1; }
+fi
 
 if [[ -z "${LEROBOT_DATA_ROOT:-}" ]]; then
     # Shared ephemeral NVMe scratch (AWS Deep Learning AMI convention), not
@@ -197,9 +204,10 @@ case "$MODE" in
           --ft_vlm=false --ft_action_expert=true --ft_embedding=none)
     ;;
   lora)
-    ARGS=(--max_duration=25000 --device_batch_size=2 --global_batch_size=64
+    # STEPS / DBS / SAVE_INTERVAL override the defaults (e.g. a small single-task fine-tune).
+    ARGS=(--max_duration="${STEPS:-25000}" --device_batch_size="${DBS:-2}" --global_batch_size=64
           --num_workers=4 --pin_memory=true
-          --save_interval=5000 --save_num_checkpoints_to_keep=5
+          --save_interval="${SAVE_INTERVAL:-5000}" --save_num_checkpoints_to_keep=5
           --ft_vlm=true --ft_action_expert=true --ft_embedding=lm_head
           --lora_enable=true --lora_rank=64
           --llm_learning_rate=5e-5 --vit_learning_rate=5e-5

@@ -88,12 +88,18 @@ class FrameStream:
 class MolmoClient:
     """examples/yam/host_server_yam.py: json_numpy over HTTP POST."""
 
-    def __init__(self, url, attention=False):
+    def __init__(self, url, attention=False, num_steps=None, seed=None):
         self.url, self.attention, self.last_attention = url, attention, None
+        self.num_steps, self.seed, self.calls = num_steps, seed, 0
 
     def __call__(self, images, state, instruction):
         req = {f"{cam}_cam": img for cam, img in images.items()}
         req.update(instruction=instruction, state=state, return_attention=self.attention)
+        if self.num_steps is not None:
+            req["num_steps"] = self.num_steps
+        if self.seed is not None:  # seed + query index: two runs with the same --seed see the same noise
+            req["seed"] = self.seed + self.calls
+        self.calls += 1
         resp = requests.post(self.url, data=json_numpy.dumps(req), timeout=60)
         resp.raise_for_status()
         out = json_numpy.loads(resp.text)
@@ -351,8 +357,12 @@ def main():
                    help="overlay saved predictions from earlier runs on this episode (same --stride)")
     p.add_argument("--horizon", type=int, default=30, help="chunk steps compared and drawn (30 = 1 s)")
     p.add_argument("--stride", type=int, default=10, help="query every N frames (30fps data)")
+    p.add_argument("--num-steps", type=int, default=None, help="molmo flow steps per query (default: server's)")
+    p.add_argument("--seed", type=int, default=None,
+                   help="molmo noise seed; query i uses seed+i, so runs with the same seed see the same noise")
     p.add_argument("--max-frames", type=int, default=None)
     p.add_argument("--data-root", default=str(Path.home() / "cos-mount/data-collection/yam"))
+    p.add_argument("--split", default=str(SPLIT), help="train/val split JSON (default: the 15-task collection split)")
     p.add_argument("--out", default="outputs/replays")
     p.add_argument("--live", action="store_true", help="open the Rerun viewer and stream into it")
     p.add_argument("--no-overlay", action="store_true",
@@ -370,9 +380,10 @@ def main():
                    help="overlay where the action tokens attend in each camera; openpi needs "
                         "scripts/evo_attn_server.py instead of serve_policy.py")
     args = p.parse_args()
+    split_path = Path(args.split)
 
     if args.list:
-        for repo, s in json.loads(SPLIT.read_text())["repos"].items():
+        for repo, s in json.loads(split_path.read_text())["repos"].items():
             val, n = s["val"], s["total_episodes"]
             # evo's pi0.5 split (openpi data_loader._split_episodes, seed 42, 5%) — assumes its _v21
             # copy of the task keeps this episode order.
@@ -385,7 +396,7 @@ def main():
         p.error("--repo is required (see --list)")
 
     root = Path(args.data_root) / args.repo
-    split = json.loads(SPLIT.read_text())["repos"].get(args.repo)
+    split = json.loads(split_path.read_text())["repos"].get(args.repo)
     episode = args.episode if args.episode is not None else split["val"][0]
     if split and episode in split["train"]:
         print(f"WARNING: episode {episode} was in the TRAINING split — this measures fit, not generalization")
@@ -448,7 +459,7 @@ def main():
     attn_groups = [(g.split(":")[0], parse_layers(g.split(":")[1]))
                    for g in (ATTN_GROUPS[args.policy] if args.attn_groups is None else args.attn_groups).split(",") if g]
     if args.policy == "molmo":
-        policy = MolmoClient(server, attention=args.attn)
+        policy = MolmoClient(server, attention=args.attn, num_steps=args.num_steps, seed=args.seed)
     else:
         policy = OpenpiClient(server, attention=args.attn)
     fig, lines = chunk_figure(names, models)

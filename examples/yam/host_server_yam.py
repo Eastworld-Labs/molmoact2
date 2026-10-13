@@ -20,9 +20,12 @@ Wire protocol:
               "timestamp":   float (optional),
               "num_steps":   int   (optional, default 10),
               "enable_cuda_graph": bool (optional),
+              "seed":        int   (optional; seeds the flow-matching noise so a
+                                    request can be replayed exactly),
+              "return_attention": bool (optional),
             }
         response body (json_numpy):
-            {"actions": ndarray(N, D) float32, "dt_ms": float}
+            {"actions": ndarray(N, D) float32, "dt_ms": float, "seed": int (if sent)}
 
 Run:
 
@@ -285,6 +288,7 @@ class Policy:
         num_steps: int = DEFAULT_NUM_STEPS,
         enable_cuda_graph: bool = False,
         return_attention: bool = False,
+        seed: int | None = None,
     ) -> np.ndarray | tuple[np.ndarray, dict[str, Any]]:
         # Camera order must match training: [top, left, right].
         images = [_to_pil(top_cam), _to_pil(left_cam), _to_pil(right_cam)]
@@ -301,7 +305,10 @@ class Policy:
                 self._capture.begin()
                 enable_cuda_graph = False  # graphs replay a captured kernel; the hook would not run
             try:
-                out = self._predict_action(images, instruction, state_f32, num_steps, enable_cuda_graph)
+                # The noise is drawn eagerly before any CUDA graph replay, so a seeded generator
+                # reproduces it with graphs on or off.
+                generator = None if seed is None else torch.Generator(device=self.device).manual_seed(int(seed))
+                out = self._predict_action(images, instruction, state_f32, num_steps, enable_cuda_graph, generator)
             finally:
                 attention = self._capture.finish() if return_attention and self._capture.calls else None
         raw = out.actions
@@ -312,7 +319,7 @@ class Policy:
             actions = actions[0]
         return (actions, attention) if return_attention else actions
 
-    def _predict_action(self, images, instruction, state_f32, num_steps, enable_cuda_graph):
+    def _predict_action(self, images, instruction, state_f32, num_steps, enable_cuda_graph, generator=None):
         return self.model.predict_action(
             processor=self.processor,
             images=images,
@@ -324,7 +331,21 @@ class Policy:
             num_steps=num_steps,
             normalize_language=True,
             enable_cuda_graph=enable_cuda_graph,
+            generator=generator,
         )
+
+    def identity(self) -> dict[str, Any]:
+        """What a replay must match to reproduce this server's outputs."""
+        return {
+            "family": "molmoact2",
+            "repo_id": self.repo_id,
+            "norm_tag": self.norm_tag,
+            "dtype": str(self.model.dtype),
+            "device": torch.cuda.get_device_name(self.device) if torch.cuda.is_available() else "cpu",
+            "torch_version": torch.__version__,
+            "cuda_graph_default": self.default_cuda_graph,
+            "deterministic": torch.are_deterministic_algorithms_enabled(),
+        }
 
 
 def _to_pil(arr: Any) -> Image.Image:
@@ -352,6 +373,7 @@ def build_app(policy: Policy) -> FastAPI:
                 "dtype": str(policy.model.dtype),
                 "num_cameras": NUM_CAMERAS,
                 "state_dim": STATE_DIM,
+                "server_identity": policy.identity(),
             }
         )
 
@@ -382,6 +404,8 @@ def build_app(policy: Policy) -> FastAPI:
         )
 
         return_attention = bool(payload.get("return_attention", False))
+        seed = payload.get("seed")
+        seed = None if seed is None else int(seed)
         t0 = time.perf_counter()
         try:
             result = policy.predict(
@@ -393,6 +417,7 @@ def build_app(policy: Policy) -> FastAPI:
                 num_steps=num_steps,
                 enable_cuda_graph=enable_cuda_graph,
                 return_attention=return_attention,
+                seed=seed,
             )
         except Exception as e:  # noqa: BLE001
             log.exception("inference failed")
@@ -401,6 +426,8 @@ def build_app(policy: Policy) -> FastAPI:
 
         actions, attention = result if return_attention else (result, None)
         reply = {"actions": actions, "dt_ms": dt_ms}
+        if seed is not None:
+            reply["seed"] = seed
         if attention is not None:
             reply["attention"] = attention
         body = json_numpy.dumps(reply)
@@ -461,6 +488,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="enable CUDA graph capture for action expert (faster but ~2 GB more VRAM)",
     )
+    p.add_argument(
+        "--deterministic",
+        action="store_true",
+        help="torch.use_deterministic_algorithms(True), so a seeded request replays bit-for-bit "
+             "(slower; use the same setting for live runs and offline replays)",
+    )
     return p.parse_args()
 
 
@@ -473,6 +506,11 @@ def main() -> None:
     }[args.dtype]
 
     os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+    if args.deterministic:
+        # cuBLAS needs this set before the first CUDA call to be deterministic.
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.benchmark = False
 
     policy = Policy(
         repo_id=args.repo_id,

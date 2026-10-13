@@ -994,7 +994,8 @@ def get_video_info(video_path: Path | str) -> dict:
         video_info["video.is_depth_map"] = False
 
         # Calculate fps from r_frame_rate
-        video_info["video.fps"] = int(video_stream.base_rate)
+        rate = video_stream.base_rate  # PyAV>=19 returns AVRational, which int() rejects
+        video_info["video.fps"] = int(rate.numerator / rate.denominator)
 
         pixel_channels = get_video_pixel_channels(video_stream.pix_fmt)
         video_info["video.channels"] = pixel_channels

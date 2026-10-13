@@ -1,0 +1,738 @@
+{
+ "seed": 0,
+ "val_fraction": 0.05,
+ "repos": {
+  "unfold_linen_20261009": {
+   "total_episodes": 103,
+   "train": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102
+   ],
+   "val": [
+    6,
+    12,
+    22,
+    68,
+    86
+   ]
+  }
+ },
+ "excluded": {},
+ "excluded_episodes": {},
+ "manifest": [
+  {
+   "episode": "ep_82da_20261007_065047",
+   "type": "pillow_case",
+   "frames": 14359,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_112e_20261007_085954",
+   "type": "hand_towel",
+   "frames": 9502,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6ed3_20261007_090720",
+   "type": "hand_towel",
+   "frames": 10978,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_eb9a_20261007_095532",
+   "type": "hand_towel",
+   "frames": 10316,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6a17_20261007_100145",
+   "type": "hand_towel",
+   "frames": 10498,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_0849_20261007_100824",
+   "type": "hand_towel",
+   "frames": 11685,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_dab8_20261007_101616",
+   "type": "hand_towel",
+   "frames": 12945,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_56e3_20261007_102457",
+   "type": "hand_towel",
+   "frames": 11293,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_34e0_20261007_103213",
+   "type": "hand_towel",
+   "frames": 10216,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_121f_20261007_105320",
+   "type": "hand_towel",
+   "frames": 8609,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_bc50_20261007_112011",
+   "type": "foot_towel",
+   "frames": 5359,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_8a8c_20261007_112718",
+   "type": "foot_towel",
+   "frames": 13526,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_43f2_20261007_113616",
+   "type": "foot_towel",
+   "frames": 11554,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_83a5_20261007_114652",
+   "type": "foot_towel",
+   "frames": 5905,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d0c2_20261007_115101",
+   "type": "foot_towel",
+   "frames": 7916,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_255a_20261007_115828",
+   "type": "foot_towel",
+   "frames": 10351,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_2b20_20261007_120514",
+   "type": "foot_towel",
+   "frames": 7767,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_f649_20261007_121032",
+   "type": "foot_towel",
+   "frames": 7032,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_56c7_20261007_121258",
+   "type": "hand_towel",
+   "frames": 9786,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_5efd_20261007_121516",
+   "type": "foot_towel",
+   "frames": 10734,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_f953_20261007_122339",
+   "type": "foot_towel",
+   "frames": 7066,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_993e_20261007_122917",
+   "type": "foot_towel",
+   "frames": 9518,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_ded0_20261007_123952",
+   "type": "foot_towel",
+   "frames": 10472,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_cba2_20261007_124836",
+   "type": "foot_towel",
+   "frames": 4606,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_4476_20261007_125135",
+   "type": "foot_towel",
+   "frames": 4187,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_bc36_20261007_125451",
+   "type": "foot_towel",
+   "frames": 5878,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_7147_20261007_143020",
+   "type": "pillow_case",
+   "frames": 11039,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c7d1_20261007_143720",
+   "type": "pillow_case",
+   "frames": 5008,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_31f4_20261007_144055",
+   "type": "pillow_case",
+   "frames": 8299,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_622f_20261007_144643",
+   "type": "pillow_case",
+   "frames": 11982,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d4db_20261007_151127",
+   "type": "pillow_case",
+   "frames": 6638,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_a7dc_20261007_151647",
+   "type": "pillow_case",
+   "frames": 9656,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_bc85_20261007_152246",
+   "type": "pillow_case",
+   "frames": 5155,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_317d_20261007_152623",
+   "type": "pillow_case",
+   "frames": 6430,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d25d_20261007_153111",
+   "type": "pillow_case",
+   "frames": 6763,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_2f8e_20261007_153612",
+   "type": "pillow_case",
+   "frames": 13079,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d49f_20261007_155312",
+   "type": "pillow_case",
+   "frames": 5224,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_296e_20261007_161113",
+   "type": "pillow_case",
+   "frames": 8772,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_e523_20261007_162316",
+   "type": "pillow_case",
+   "frames": 8527,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_4867_20261007_164814",
+   "type": "hand_towel",
+   "frames": 9653,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_e82b_20261007_164906",
+   "type": "hand_towel",
+   "frames": 9461,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_e966_20261007_173508",
+   "type": "hand_towel",
+   "frames": 15474,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_0165_20261007_174619",
+   "type": "hand_towel",
+   "frames": 14169,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_00e9_20261007_175702",
+   "type": "hand_towel",
+   "frames": 10799,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c346_20261007_180616",
+   "type": "hand_towel",
+   "frames": 8575,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_42e8_20261007_181238",
+   "type": "hand_towel",
+   "frames": 9807,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_5755_20261007_181923",
+   "type": "hand_towel",
+   "frames": 6960,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_2c78_20261007_182414",
+   "type": "hand_towel",
+   "frames": 7884,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_80d2_20261007_182525",
+   "type": "hand_towel",
+   "frames": 493,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_1a1a_20261007_182957",
+   "type": "hand_towel",
+   "frames": 8145,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_81a3_20261007_183615",
+   "type": "hand_towel",
+   "frames": 12571,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6128_20261007_184629",
+   "type": "hand_towel",
+   "frames": 9461,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_3c56_20261007_185146",
+   "type": "hand_towel",
+   "frames": 7204,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c866_20261007_185257",
+   "type": "hand_towel",
+   "frames": 8648,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c7c9_20261008_161010",
+   "type": "hand_towel",
+   "frames": 14716,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_4792_20261008_161643",
+   "type": "foot_towel",
+   "frames": 16052,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_e2bd_20261008_162101",
+   "type": "pillow_case",
+   "frames": 10760,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_240e_20261008_162524",
+   "type": "hand_towel",
+   "frames": 15500,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_379c_20261008_162644",
+   "type": "foot_towel",
+   "frames": 13960,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_589e_20261008_162859",
+   "type": "pillow_case",
+   "frames": 12382,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_3f07_20261008_163549",
+   "type": "foot_towel",
+   "frames": 16055,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_482f_20261008_163724",
+   "type": "hand_towel",
+   "frames": 4172,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_92be_20261008_163741",
+   "type": "pillow_case",
+   "frames": 12595,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6718_20261008_164010",
+   "type": "hand_towel",
+   "frames": 5660,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_1d47_20261008_164213",
+   "type": "hand_towel",
+   "frames": 15191,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_14e6_20261008_164514",
+   "type": "hand_towel",
+   "frames": 9332,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_84c1_20261008_164640",
+   "type": "foot_towel",
+   "frames": 11694,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d7ad_20261008_164647",
+   "type": "pillow_case",
+   "frames": 10390,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_12c6_20261008_165259",
+   "type": "hand_towel",
+   "frames": 9174,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6c14_20261008_165416",
+   "type": "hand_towel",
+   "frames": 13645,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_de5e_20261008_165431",
+   "type": "pillow_case",
+   "frames": 12713,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_2285_20261008_165928",
+   "type": "foot_towel",
+   "frames": 9514,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_a3ed_20261008_170137",
+   "type": "hand_towel",
+   "frames": 7072,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_49b4_20261008_170302",
+   "type": "pillow_case",
+   "frames": 12073,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d7a8_20261008_170533",
+   "type": "foot_towel",
+   "frames": 10283,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c9e0_20261008_170626",
+   "type": "hand_towel",
+   "frames": 5366,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6668_20261008_170757",
+   "type": "hand_towel",
+   "frames": 12854,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_5c69_20261008_171210",
+   "type": "pillow_case",
+   "frames": 13820,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_a5f4_20261008_171254",
+   "type": "hand_towel",
+   "frames": 5362,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_eaae_20261008_171315",
+   "type": "foot_towel",
+   "frames": 14634,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_92d5_20261008_171715",
+   "type": "hand_towel",
+   "frames": 3217,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_2954_20261008_171718",
+   "type": "hand_towel",
+   "frames": 13438,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_3275_20261008_171935",
+   "type": "hand_towel",
+   "frames": 5157,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c529_20261008_172202",
+   "type": "pillow_case",
+   "frames": 12984,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_fc25_20261008_172429",
+   "type": "foot_towel",
+   "frames": 12690,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_8785_20261008_173049",
+   "type": "hand_towel",
+   "frames": 12405,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_476b_20261008_173226",
+   "type": "pillow_case",
+   "frames": 11425,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_9b3a_20261008_173455",
+   "type": "foot_towel",
+   "frames": 11245,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_d0e9_20261008_174156",
+   "type": "foot_towel",
+   "frames": 11412,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c7bb_20261008_174620",
+   "type": "pillow_case",
+   "frames": 12812,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_bd74_20261008_175016",
+   "type": "foot_towel",
+   "frames": 10430,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_f3a4_20261008_175141",
+   "type": "hand_towel",
+   "frames": 8189,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_6678_20261008_175720",
+   "type": "foot_towel",
+   "frames": 13450,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_69a7_20261008_180732",
+   "type": "foot_towel",
+   "frames": 11562,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_3a6b_20261008_181004",
+   "type": "hand_towel",
+   "frames": 12589,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_13e9_20261008_181733",
+   "type": "pillow_case",
+   "frames": 2383,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_399f_20261008_182255",
+   "type": "foot_towel",
+   "frames": 9957,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c679_20261008_182357",
+   "type": "pillow_case",
+   "frames": 9450,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_ec2e_20261008_182412",
+   "type": "hand_towel",
+   "frames": 8537,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_80d9_20261008_182508",
+   "type": "hand_towel",
+   "frames": 13089,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_c9d0_20261008_183012",
+   "type": "foot_towel",
+   "frames": 8543,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_e80f_20261008_184255",
+   "type": "foot_towel",
+   "frames": 9172,
+   "prompt": "unfold linen"
+  },
+  {
+   "episode": "ep_9ebf_20261008_184908",
+   "type": "foot_towel",
+   "frames": 7513,
+   "prompt": "unfold linen"
+  }
+ ]
+}

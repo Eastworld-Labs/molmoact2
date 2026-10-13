@@ -420,10 +420,14 @@ def yam_data_collection_val_datasets() -> List[str]:
 
 
 def build_molmoact2_yam_data_collection() -> Tuple[List[RawMixtureEntry], Dict[str, Dict[str, object]]]:
-    split = json.loads(YAM_DATA_COLLECTION_SPLIT.read_text())
+    return _build_yam_mixture("eastworlds_yam_data_collection", YAM_DATA_COLLECTION_SPLIT)
+
+
+def _build_yam_mixture(tag: str, split_path: Path) -> Tuple[List[RawMixtureEntry], Dict[str, Dict[str, object]]]:
+    split = json.loads(split_path.read_text())
     return build_single_lerobot_mixture(
-        name="eastworlds_yam_data_collection",
-        tag="eastworlds_yam_data_collection",
+        name=tag,
+        tag=tag,
         repo_ids=[f"{repo}@{_episode_ranges(s['train'])}" for repo, s in split["repos"].items()],
         action_key="action",
         state_keys=["observation.state"],
@@ -440,6 +444,19 @@ def build_molmoact2_yam_data_collection() -> Tuple[List[RawMixtureEntry], Dict[s
     )
 
 
+# Single-task unfold-linen fine-tune (scripts/mcap_to_lerobot.py writes the dataset and the split file).
+YAM_UNFOLD_LINEN_SPLIT = Path(__file__).with_name("yam_unfold_linen_split.json")
+
+
+def build_molmoact2_yam_unfold_linen() -> Tuple[List[RawMixtureEntry], Dict[str, Dict[str, object]]]:
+    return _build_yam_mixture("eastworlds_yam_unfold_linen", YAM_UNFOLD_LINEN_SPLIT)
+
+
+def yam_unfold_linen_val_datasets() -> List[str]:
+    split = json.loads(YAM_UNFOLD_LINEN_SPLIT.read_text())
+    return [f"{LEROBOT_TAG_PREFIX}{repo}@{_episode_ranges(s['val'])}" for repo, s in split["repos"].items()]
+
+
 MOLMOACT2_LEROBOT_MIXTURES: Dict[str, MixtureBuilder] = {
     "pre_post_train": build_molmoact2_pre_post_train,
     "droid": build_molmoact2_droid,
@@ -448,9 +465,11 @@ MOLMOACT2_LEROBOT_MIXTURES: Dict[str, MixtureBuilder] = {
     "yam": build_molmoact2_yam,
     "so100_so101": build_molmoact2_so100_so101,
     "yam_data_collection": build_molmoact2_yam_data_collection,
+    "yam_unfold_linen": build_molmoact2_yam_unfold_linen,
 }
 
 # Held-out LeRobot dataset specs per mixture, for --action_val_interval.
 MOLMOACT2_LEROBOT_VAL_DATASETS: Dict[str, Callable[[], List[str]]] = {
     "yam_data_collection": yam_data_collection_val_datasets,
+    "yam_unfold_linen": yam_unfold_linen_val_datasets,
 }

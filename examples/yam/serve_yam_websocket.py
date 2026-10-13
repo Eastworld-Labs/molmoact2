@@ -18,12 +18,19 @@ Wire protocol (client = openpi_client.WebsocketClientPolicy):
                     observation.images.wrist_left      (H, W, 3) uint8 RGB   -> `left_cam`
                     observation.images.wrist_right     (H, W, 3) uint8 RGB   -> `right_cam`
                     prompt                             str                   -> `instruction`
-                server -> client   {"actions": (N, 14) float32, "server_timing": {...}}
+                    _seed                              int (optional)        -> `seed` (replayable noise)
+                    return_attention                   bool (optional)       -> attention maps in reply
+                server -> client   {"actions": (N, 14) float32, "server_timing": {...},
+                                    "seed": int (if sent), "attention": {...} (if asked)}
                                    or, on failure, a plain-text traceback frame and a close.
     GET /healthz   -> 200 "OK"
 
-Chunked execution only: MolmoAct2 has no real-time-chunking path, so metadata says
-rtc_enabled=False and the runner must not be started with --rtc.
+Chunked execution by default (metadata rtc_enabled=False; don't start the runner with --rtc).
+With `--rtc` the server does training-free real-time chunking (molmo_rtc.py, a port of evo's RTC):
+metadata advertises rtc_enabled/execution_horizon/inference_delay, replies carry `raw_actions`
+(normalized chunk) + `raw_state`, and a request with `_rtc_prev_chunk_left_over` is sampled with
+guidance toward that leftover. Start the runner with --rtc; it reads e/d from the metadata.
+inference_delay must cover the RTC request latency at the runner's control rate.
 
 Needs `msgpack` in addition to the repo's own dependencies.
 
@@ -93,6 +100,27 @@ def _unpack_array(obj: Any) -> Any:
     return obj
 
 
+# Arm joints (left 0-5, right 7-12); grippers (6, 13) are left unsmoothed so open/close aren't delayed.
+ARM_DIMS = np.r_[0:6, 7:13]
+
+
+def smooth_chunk(chunk: np.ndarray, sigma: float, dims: np.ndarray = ARM_DIMS) -> np.ndarray:
+    """Zero-phase Gaussian low-pass along the chunk's time axis (edge-padded, so the ends aren't pulled
+    toward zero). The whole chunk is known up front, so unlike an EMA this adds no lag and carries no
+    state across chunk swaps. Linear per joint, so applying it to both the absolute chunk and the
+    min-max-normalized `raw_actions` keeps the two consistent."""
+    if sigma <= 0:
+        return chunk
+    radius = max(1, int(np.ceil(3 * sigma)))
+    kernel = np.exp(-0.5 * (np.arange(-radius, radius + 1) / sigma) ** 2)
+    kernel /= kernel.sum()
+    out = np.array(chunk, dtype=np.float32, copy=True)
+    padded = np.pad(out[:, dims], ((radius, radius), (0, 0)), mode="edge")
+    for i, d in enumerate(dims):
+        out[:, d] = np.convolve(padded[:, i], kernel, mode="valid")
+    return out
+
+
 _packer = functools.partial(msgpack.Packer, default=_pack_array)
 _unpackb = functools.partial(msgpack.unpackb, object_hook=_unpack_array)
 
@@ -135,14 +163,22 @@ def obs_to_predict_kwargs(obs: dict) -> dict[str, Any]:
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError(f"{obs_key} must be HxWx3, got {image.shape}")
         kwargs[arg] = image
+    if obs.get("_seed") is not None:
+        kwargs["seed"] = int(obs["_seed"])
+    if obs.get("return_attention"):
+        kwargs["return_attention"] = True
     return kwargs
 
 
 class YamWebsocketServer:
     """openpi-protocol websocket server around `predict(**kwargs) -> (N, 14) actions`."""
 
-    def __init__(self, predict: Callable[..., np.ndarray], metadata: dict, host: str, port: int) -> None:
+    def __init__(self, predict: Callable[..., Any], metadata: dict, host: str, port: int, rtc: Any = None,
+                 fixed_seed: int | None = None, smooth_sigma: float = 0.0) -> None:
         self._predict = predict
+        self._smooth_sigma = smooth_sigma
+        self._rtc = rtc
+        self._fixed_seed = fixed_seed
         self._metadata = metadata
         self._host = host
         self._port = port
@@ -161,9 +197,29 @@ class YamWebsocketServer:
         ) as server:
             await server.serve_forever()
 
-    def infer(self, obs: dict) -> np.ndarray:
-        obs = {k: v for k, v in obs.items() if not k.startswith("_rtc_")}  # RTC fields: unsupported, ignored
-        actions = np.asarray(self._predict(**obs_to_predict_kwargs(obs)), dtype=np.float32)
+    def infer(self, obs: dict) -> dict:
+        leftover = obs.get("_rtc_prev_chunk_left_over")
+        obs = {k: v for k, v in obs.items() if not k.startswith("_rtc_")}  # ignored unless --rtc
+        kwargs = obs_to_predict_kwargs(obs)
+        if self._fixed_seed is not None and "seed" not in kwargs:
+            kwargs["seed"] = self._fixed_seed  # same initial noise every request: consecutive chunks agree more
+        raw_actions = None
+        if self._rtc is None:
+            result = self._predict(**kwargs)
+        else:
+            with self._rtc.lock:
+                if leftover is not None:
+                    with self._rtc.guided(np.asarray(leftover, dtype=np.float32)):
+                        result = self._predict(rtc=True, **kwargs)
+                else:
+                    result = self._predict(**kwargs)
+                n_steps = np.asarray(result[0] if kwargs.get("return_attention") else result).shape[0]
+                if self._rtc.e + self._rtc.d > n_steps:
+                    raise ValueError(f"execution_horizon + inference_delay = {self._rtc.e + self._rtc.d} "
+                                     f"exceeds the {n_steps}-step chunk")
+                raw_actions = self._rtc.raw_actions(n_steps)
+        actions, attention = result if kwargs.get("return_attention") else (result, None)
+        actions = np.asarray(actions, dtype=np.float32)
         if actions.ndim != 2 or actions.shape[1] != YAM_ACTION_DIM:
             raise ValueError(
                 f"model returned actions of shape {actions.shape}; the YAM runner needs (N, {YAM_ACTION_DIM}). "
@@ -171,7 +227,19 @@ class YamWebsocketServer:
             )
         if not np.isfinite(actions).all():
             raise ValueError("model returned NaN or Inf actions")
-        return actions
+        if self._smooth_sigma > 0:
+            actions = smooth_chunk(actions, self._smooth_sigma)
+            if raw_actions is not None:
+                raw_actions = smooth_chunk(raw_actions, self._smooth_sigma)
+        reply: dict[str, Any] = {"actions": actions}
+        if raw_actions is not None:
+            reply["raw_actions"] = raw_actions
+            reply["raw_state"] = kwargs["state"]
+        if "seed" in kwargs:
+            reply["seed"] = kwargs["seed"]
+        if attention is not None:
+            reply["attention"] = attention
+        return reply
 
     async def _handler(self, websocket: ws_server.ServerConnection) -> None:
         log.info("connection from %s opened", websocket.remote_address)
@@ -183,10 +251,11 @@ class YamWebsocketServer:
                 obs = _unpackb(await websocket.recv())
                 t0 = time.monotonic()
                 # Off the event loop: a blocked loop can't answer a close or a new connection.
-                actions = await loop.run_in_executor(None, self.infer, obs)
+                reply = await loop.run_in_executor(None, self.infer, obs)
                 infer_ms = (time.monotonic() - t0) * 1000
-                log.debug("infer %.0f ms, %s", infer_ms, actions.shape)
-                await websocket.send(packer.pack({"actions": actions, "server_timing": {"infer_ms": infer_ms}}))
+                log.debug("infer %.0f ms, %s", infer_ms, reply["actions"].shape)
+                reply["server_timing"] = {"infer_ms": infer_ms}
+                await websocket.send(packer.pack(reply))
             except websockets.exceptions.ConnectionClosed:
                 log.info("connection from %s closed", websocket.remote_address)
                 return
@@ -219,6 +288,22 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--cuda-graph", action="store_true", help="faster action expert, ~2 GB more VRAM")
     p.add_argument("--num-steps", type=int, default=None, help="flow-matching steps (default: host_server_yam.DEFAULT_NUM_STEPS)")
     p.add_argument("--no-warmup", action="store_true")
+    p.add_argument("--rtc", action="store_true", help="real-time chunking (see module docstring); "
+                   "RTC requests run without the action CUDA graph")
+    p.add_argument("--execution-horizon", type=int, default=15, help="RTC: actions executed per chunk")
+    p.add_argument("--inference-delay", type=int, default=10,
+                   help="RTC: control steps the next chunk may take; must cover RTC request latency")
+    p.add_argument("--rtc-method", default="inpaint", choices=["inpaint", "guided"],
+                   help="inpaint: forward-only prefix pinning + blend (fast, default); guided: VJP guidance (~2x slower)")
+    p.add_argument("--rtc-schedule", default="linear", choices=["linear", "exp", "ones", "zeros"])
+    p.add_argument("--smooth-sigma", type=float, default=0.0,
+                   help="zero-phase Gaussian low-pass on each chunk's arm joints, sigma in control steps (0 = off)")
+    p.add_argument("--fixed-seed", type=int, default=None,
+                   help="draw the same flow noise for every request (unless the client sends _seed); "
+                        "keeps consecutive chunks from switching between modes")
+    p.add_argument("--rtc-max-guidance", type=float, default=10.0)
+    p.add_argument("--deterministic", action="store_true",
+                   help="torch deterministic algorithms, so seeded requests replay bit-for-bit (slower)")
     return p.parse_args()
 
 
@@ -233,6 +318,10 @@ def main() -> None:
     import host_server_yam as hs
 
     os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+    if args.deterministic:
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")  # before the first CUDA call
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.benchmark = False
     dtype = {"bfloat16": torch.bfloat16, "float16": torch.float16, "float32": torch.float32}[args.dtype]
     repo_id = args.repo_id or hs.REPO_ID
     norm_tag = args.norm_tag or hs.NORM_TAG
@@ -243,12 +332,29 @@ def main() -> None:
     if not args.no_warmup:
         hs.warmup(policy)
 
-    def predict(**kwargs: Any) -> np.ndarray:
-        return policy.predict(num_steps=num_steps, enable_cuda_graph=policy.default_cuda_graph, **kwargs)
+    rtc = None
+    rtc_meta: dict[str, Any] = {}
+    if args.rtc:
+        from molmo_rtc import MolmoRTC
+        rtc = MolmoRTC(policy.model, execution_horizon=args.execution_horizon,
+                       inference_delay=args.inference_delay, action_dim=YAM_ACTION_DIM,
+                       schedule=args.rtc_schedule, max_guidance_weight=args.rtc_max_guidance,
+                       method=args.rtc_method)
+        rtc_meta = {"rtc_enabled": True, "execution_horizon": args.execution_horizon,
+                    "inference_delay": args.inference_delay, "rtc_method": args.rtc_method,
+                    "rtc_schedule": args.rtc_schedule,
+                    "rtc_max_guidance_weight": args.rtc_max_guidance}
 
-    metadata = build_metadata({"repo_id": repo_id, "norm_tag": norm_tag, "num_steps": num_steps})
+    def predict(rtc: bool = False, **kwargs: Any) -> np.ndarray:
+        # RTC requests need the eager flow loop (the CUDA graph replays the unguided one).
+        return policy.predict(num_steps=num_steps, enable_cuda_graph=policy.default_cuda_graph and not rtc, **kwargs)
+
+    metadata = build_metadata({"repo_id": repo_id, "norm_tag": norm_tag, "num_steps": num_steps, **rtc_meta,
+                               "fixed_seed": args.fixed_seed, "smooth_sigma": args.smooth_sigma,
+                               "server_identity": {**policy.identity(), "num_steps": num_steps}})
     log.info("Listening on ws://%s:%d (metadata: %s)", args.host, args.port, metadata)
-    YamWebsocketServer(predict, metadata, args.host, args.port).serve_forever()
+    YamWebsocketServer(predict, metadata, args.host, args.port, rtc=rtc, fixed_seed=args.fixed_seed,
+                       smooth_sigma=args.smooth_sigma).serve_forever()
 
 
 if __name__ == "__main__":
